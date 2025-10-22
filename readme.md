@@ -1,16 +1,16 @@
-Smart Trading Bot – Capstone Project
+# Smart Trading Bot – Capstone Project
 
 Automated Trading Assistant for XAUUSD (Gold) and Other Instruments
 
 
 
 
-🔍 Overview
+🔍 # Overview
 
 This project is a full-stack automated trading system developed as a capstone for financial algorithmic trading and Smart Money Concepts (SMC). It is designed to trade instruments such as XAUUSD (Gold) and adapt to other markets via modular architecture.
 It covers the full lifecycle: signal detection from your database, trade execution through MetaTrader 5, position management (multiple take-profits & breakeven logic), and risk/lot-size management with automatic escalation.
 
-📂 Key Components
+📂 # Key Components
 
 main.py – Entry point script that integrates signal fetching, decision logic and execution workflow.
 
@@ -26,7 +26,7 @@ requirements.txt – Lists Python dependencies (MetaTrader5, SQLite3, etc.).
 
 .gitignore – Excludes large binaries, datasets and sensitive files from version control.
 
-💡 Features
+💡 # Features
 
 Database-driven signals: Reads latest trade signal from a SQLite database (signal_history) and acts accordingly.
 
