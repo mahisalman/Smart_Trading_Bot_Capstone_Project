@@ -2,9 +2,6 @@
 
 Automated Trading Assistant for XAUUSD (Gold) and Other Instruments
 
-
-
-
 🔍 Overview
 
 This project is a full-stack automated trading system developed as a capstone for financial algorithmic trading and Smart Money Concepts (SMC). It is designed to trade instruments such as XAUUSD (Gold) and adapt to other markets via modular architecture.
