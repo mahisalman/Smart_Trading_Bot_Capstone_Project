@@ -1,148 +1,56 @@
-# TradingView Chart Data Extractor
+Smart Trading Bot – Capstone Project
 
-A lightweight Python utility that reads a TradingView chart screenshot and extracts:
-
-- **OCR text** from the whole image  
-- **Y‑axis** and **X‑axis** labels  
-- **Candlestick** data (green/red bodies)  
-- **Indicator zones** (e.g., volume, MACD panels)
-
-```
-mnt/
-└─ data/
-   └─ extract_chart.py   # ← Main extraction script
-README.md                # This file
-```
-
-## 🛠️ Prerequisites
-
-1. **Python 3.8+**
-     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-     ```
-
-3. **Python packages** (install via `pip`):
-
-   ```sh
-   pip install opencv-python pytesseract numpy scikit-image
-   ```
-
-## 🚀 Quick Start
-
-```sh
-# Navigate to the project folder
-cd f:\cap
-
-# Install dependencies
-pip install -r requirements.txt   # (optional, if you create a requirements file)
-
-# Run the extractor
-python mnt\data\extract_chart.py --image path\to\chart.png --out output_folder
-```
-
-### Arguments
-
-| Argument | Description | Required |
-## 📄 Output
-
-The script creates the following files inside the output folder:
-
-- `result.json` – Full extraction data (image path, size, OCR text, axis labels, candles, indicator zones).  
-- `candles_debug.png` – Image with detected candle bounding boxes.  
-- `zones_debug.png` – Image with detected indicator zones highlighted.  
-- `ocr_full.txt` – Plain OCR text extracted from the whole image.
-
-### Sample `result.json` structure
-
-```json
-{
-  "image": "path/to/chart.png",
-  "size": { "width": 1280, "height": 720 },
-  "ocr_text": "Sample OCR output …",
-  "y_axis_labels": [
-    { "bbox": [1200, 10, 1250, 30], "text": "1234" }
-  ],
-  "x_axis_labels": [
-    { "bbox": [100, 700, 150, 720], "text": "12:00" }
-  ],
-  "candles": [
-    { "color": "green", "bbox": [100, 200, 120, 250], "area": 500 },
-    { "color": "red",   "bbox": [130, 210, 150, 260], "area": 480 }
-  ],
-    { "bbox": [0, 600, 1280, 720], "area": 92160 }
-  ]
-```
+Automated Trading Assistant for XAUUSD (Gold) and Other Instruments
 
 
-- **No OCR output?**  
-  Ensure the image has sufficient contrast. Adjust the preprocessing step in `ocr_text` if needed.
 
-- **Candles not detected?**  
-  The HSV colour ranges may need tweaking for different chart themes. Modify `lower_green`, `upper_green`, `lower_red1`, etc., in `detect_candles`.
-- **Tesseract not found**  
-  Verify the `tesseract_cmd` path matches your installation or add Tesseract to your system `PATH`.
-TradingView Chart Data Extractor
-================================
 
-This repository contains a single script **`extract_chart.py`** that extracts useful
-information from a TradingView screenshot.
+🔍 Overview
 
-Features
---------
-* Full‑image OCR (Tesseract) – extracts the raw text of the chart.
-* Detection of Y‑axis and X‑axis labels.
-* Candle detection (green / red) with visual debug image.
-* Indicator‑zone detection.
-* **Open‑Range High (ORH) and Open‑Range Low (ORL)** detection.
-  * First tries Tesseract OCR.
-  * If the values are not found, falls back to a Hugging Face model
-    (`microsoft/trocr-base-handwritten`).
-* Results are saved as:
-  * `result.json` – comprehensive JSON payload.
-  * `orh.txt` and `orl.txt` – plain‑text files containing the numeric values.
-  * `candles_debug.png` and `zones_debug.png` – visual debugging images.
+This project is a full-stack automated trading system developed as a capstone for financial algorithmic trading and Smart Money Concepts (SMC). It is designed to trade instruments such as XAUUSD (Gold) and adapt to other markets via modular architecture.
+It covers the full lifecycle: signal detection from your database, trade execution through MetaTrader 5, position management (multiple take-profits & breakeven logic), and risk/lot-size management with automatic escalation.
 
+📂 Key Components
+
+main.py – Entry point script that integrates signal fetching, decision logic and execution workflow.
+
+auto_gold_trader_db.py – Handles database-driven signal reading, trade duplication prevention, multi-TP trade entry and breakeven logic.
+
+mt5_api.py – Abstraction layer for MetaTrader 5 connections, symbol selection, and order management.
+
+pipeline.py – Orchestrates the end-to-end pipeline (signal → trade → monitor) for automated running.
+
+lot_tracker.json – A lightweight persistent tracker for dynamic lot size escalation logic.
+
+requirements.txt – Lists Python dependencies (MetaTrader5, SQLite3, etc.).
+
+.gitignore – Excludes large binaries, datasets and sensitive files from version control.
+
+💡 Features
+
+Database-driven signals: Reads latest trade signal from a SQLite database (signal_history) and acts accordingly.
+
+Single trade-set per signal: Prevents duplicate execution by tracking magic number + comment context.
+
+Dynamic lot size escalation: Every time all trades are closed successfully, lot size increments automatically.
+
+Multi-take-profit entries: Opens multiple trades (TP70, TP100, TP150, etc) for each signal to scale and spread risk.
+
+Breakeven logic: Moves stop-loss to breakeven + buffer after first target hit or after defined pip threshold.
+
+Structure break & SMC ready: Designed to align with Smart Money Concepts — you can plug in POI detection modules or AI prompts.
+
+MetaTrader 5 integration: Fully compatible with MT5 brokers; symbol selection, login, and trade API wrapped.
+
+Clean history workflow: Includes Git history cleanup script to remove overly large files (.rar, datasets) and ensures stable repo size.
+
+🧠 Installation & Setup
 Prerequisites
--------------
-1. **Python 3.8+**
-2. **Tesseract OCR** installed and the path set correctly in the script:
-   ```python
-   pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-   ```
-3. Required Python packages – they will be installed automatically on first run,
-   but you can also install them manually:
-   ```bash
-   pip install opencv-python pytesseract numpy scikit-image transformers torch pillow
-   ```
 
-Usage
------
-```bash
-python extract_chart.py --image path/to/chart.png [--out output_folder]
-```
+Python 3.8+
 
-* `--image` – path to the TradingView screenshot (required).
-* `--out`   – folder where all results will be written (default: `chart_output`).
+MetaTrader 5 installed and broker account credentials set
 
-Example
-~~~~~~~
-```bash
-python extract_chart.py --image samples/firefox_tab_capture.png
-```
-After execution you will find the JSON result and the `orh.txt` / `orl.txt`
-files inside the output directory.
+SQLite3 database with table signal_history (timestamp, chart_signal) prepared
 
-License
--------
-MIT – see the `LICENSE` file if you add one.
-
----
-Feel free to modify the script to suit your own chart‑type or add more
-post‑processing steps. Happy hacking!
-
-## 📜 License
-
-This project is released under the MIT License – feel free to modify and redistribute.
-
---- 
-
-*Generated for the workspace containing `extract_chart.py`.*
+Installation
