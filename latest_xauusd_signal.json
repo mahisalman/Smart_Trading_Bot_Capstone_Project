@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-22T10:15:21+06:00",
+  "timestamp": "2025-10-22T10:55:35+06:00",
   "sources_used": [
     "yahoo_futures",
     "tradingview_html",
@@ -8,7 +8,7 @@
   "price_samples": [
     {
       "source": "yahoo_futures",
-      "price": 4139.10009765625
+      "price": 4141.5
     },
     {
       "source": "tradingview_html",
@@ -20,7 +20,7 @@
     }
   ],
   "price_aggregate": {
-    "mean": 1517.36669921875,
+    "mean": 1518.1666666666667,
     "median": 412.0,
     "sources": [
       "yahoo_futures",
@@ -29,13 +29,13 @@
     ]
   },
   "technical_indicators": {
-    "sma_short": 4122.0150390625,
-    "sma_long": 4149.556015625,
-    "ema_20": 4119.517217955871,
-    "rsi_14": 50.47846889952153,
-    "atr_proxy": 14.928571428571429,
-    "momentum_5": 0.0005076378187696129,
-    "latest_price": 4139.10009765625
+    "sma_short": 4125.050024414062,
+    "sma_long": 4142.592021484375,
+    "ema_20": 4125.324006629529,
+    "rsi_14": 52.559574926188716,
+    "atr_proxy": 14.092878069196429,
+    "momentum_5": 0.019069881889763884,
+    "latest_price": 4141.5
   },
   "news_headlines": [],
   "news_sentiment": 0.0,
