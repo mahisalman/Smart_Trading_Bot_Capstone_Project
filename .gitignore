@@ -215,9 +215,6 @@ ENV/
 *.tar.gz
 *.avi
 *.mov
-*.png
-*.jpg
-*.jpeg
 
 # --- Logs and temp files ---
 *.log

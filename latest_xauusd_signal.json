@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-10-22T10:55:35+06:00",
+  "timestamp": "2025-10-22T12:05:24+06:00",
   "sources_used": [
     "yahoo_futures",
     "tradingview_html",
@@ -8,7 +8,7 @@
   "price_samples": [
     {
       "source": "yahoo_futures",
-      "price": 4141.5
+      "price": 4150.7998046875
     },
     {
       "source": "tradingview_html",
@@ -16,12 +16,12 @@
     },
     {
       "source": "kitco_fallback",
-      "price": 412.0
+      "price": 413.0
     }
   ],
   "price_aggregate": {
-    "mean": 1518.1666666666667,
-    "median": 412.0,
+    "mean": 1521.5999348958333,
+    "median": 413.0,
     "sources": [
       "yahoo_futures",
       "tradingview_html",
@@ -29,21 +29,23 @@
     ]
   },
   "technical_indicators": {
-    "sma_short": 4125.050024414062,
-    "sma_long": 4142.592021484375,
-    "ema_20": 4125.324006629529,
-    "rsi_14": 52.559574926188716,
-    "atr_proxy": 14.092878069196429,
-    "momentum_5": 0.019069881889763884,
-    "latest_price": 4141.5
+    "sma_short": 4134.934985351562,
+    "sma_long": 4126.950024414063,
+    "ema_20": 4138.009069806568,
+    "rsi_14": 68.25172437342074,
+    "atr_proxy": 5.107073102678571,
+    "momentum_5": 0.0021003130842185413,
+    "latest_price": 4150.7998046875
   },
   "news_headlines": [],
   "news_sentiment": 0.0,
   "prediction": {
-    "signal": "HOLD",
-    "confidence": 50,
-    "score": 0.0,
-    "reasons": []
+    "signal": "BUY",
+    "confidence": 80,
+    "score": 30.0,
+    "reasons": [
+      "price above long SMA and positive momentum"
+    ]
   },
   "notes": []
 }
