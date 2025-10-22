@@ -70,7 +70,8 @@ DB_PATH = r"f:\cap\signals.db"
 
 Running the Bot
 
-```python main.py  
+```
+python main.py  
 ```
 
 This will:
