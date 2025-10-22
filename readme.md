@@ -51,7 +51,8 @@ MetaTrader 5 installed and broker account credentials set
 SQLite3 database with table signal_history (timestamp, chart_signal) prepared
 
 Installation
-```git clone https://github.com/mahisalman/Smart_Trading_Bot_Capstone_Project.git  
+```
+git clone https://github.com/mahisalman/Smart_Trading_Bot_Capstone_Project.git  
 cd Smart_Trading_Bot_Capstone_Project  
 pip install -r requirements.txt  
 ```
@@ -59,7 +60,8 @@ pip install -r requirements.txt
 Configuration
 
 Edit configuration variables at top of main.py or in config section:
-```LOGIN_ID = …  
+```
+LOGIN_ID = …  
 PASSWORD = "…"  
 SERVER = "Exness-MT5Trial7"  
 LOT_SIZE (base) = 0.01  
