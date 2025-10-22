@@ -6,7 +6,9 @@ Automated Trading Assistant for XAUUSD (Gold) and Other Instruments
 
 This project is a full-stack automated trading system developed as a capstone for financial algorithmic trading and Smart Money Concepts (SMC). It is designed to trade instruments such as XAUUSD (Gold) and adapt to other markets via modular architecture.
 It covers the full lifecycle: signal detection from your database, trade execution through MetaTrader 5, position management (multiple take-profits & breakeven logic), and risk/lot-size management with automatic escalation.
+
 ![screenshot](https://github.com/mahisalman/Smart_Trading_Bot_Capstone_Project/blob/main/Screenshot_1.png)
+
 📂 Key Components
 
 main.py – Entry point script that integrates signal fetching, decision logic and execution workflow.
