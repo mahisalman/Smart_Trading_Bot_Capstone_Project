@@ -241,9 +241,6 @@ Thumbs.db
 *.db
 *.csv
 *.zip
-*.png
-*.jpg
-*.jpeg
 *.rar
 
 # Python
