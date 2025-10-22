@@ -1,0 +1,16 @@
+{
+    "BOS_Type": "Bearish",
+    "POI_Candle": {
+        "Open": 4401.27,
+        "High": 4432.13,
+        "Low": 4401.26,
+        "Close": 4425.69,
+        "Time": "2025-10-17 15:00:00"
+    },
+    "POI_Zone": {
+        "Start": 4401.27,
+        "End": 4432.13
+    },
+    "Confidence": "High",
+    "Comment": "A clear bearish Break of Structure occurs at 2025-10-17 22:00:00 when price closes below the recent swing low around 4377.91 (2025-10-17 21:00:00). The neckline candle causing this break is the bearish candle at 2025-10-17 22:00:00. The highest bearish candle to the right of neckline is at 2025-10-17 15:00:00 (open 4401.27, high 4432.13), and to the left of this bearish candle, the first bullish candle is at 2025-10-17 14:00:00. Thus, the POI candle is the bearish candle at 2025-10-17 15:00:00, making the POI zone from its open to wick high (4401.27 to 4432.13). This zone represents the last opposing bearish candle before the strong downward move, indicating institutional interest."
+}

@@ -1,0 +1,213 @@
+import MetaTrader5 as mt5
+import sqlite3
+import sys
+import time
+import json
+from datetime import datetime
+
+# ---------------------------
+# 🔐 ACCOUNT CONFIGURATION
+# ---------------------------
+LOGIN_ID = 206426967
+PASSWORD = "S@lman0193"
+SERVER = "Exness-MT5Trial7"
+
+# ---------------------------
+# ⚙️ TRADE PARAMETERS
+# ---------------------------
+LOT_SIZE = 0.01
+TP_PIPS = [7, 10, 15, 20, 30]  # TP in pips
+TRADE_DEVIATION = 30
+TRADE_MAGIC = 2025
+DB_PATH = r"f:\cap\signals.db"
+BREAKEVEN_BUFFER = 5  # move SL 5 pips above/below entry price for breakeven
+
+# ---------------------------
+# 🧠 LLM CONFIG (optional)
+# ---------------------------
+# GITHUB_API_KEY, MODEL_NAME, POI_PROMPT can be added here if needed
+
+# ==============================
+# ✅ MT5 Initialization
+# ==============================
+def initialize_mt5():
+    print("🔌 Initializing MT5...")
+    if not mt5.initialize():
+        print(f"❌ MT5 init failed: {mt5.last_error()}")
+        sys.exit()
+
+    print("🔑 Logging in...")
+    if not mt5.login(LOGIN_ID, PASSWORD, SERVER):
+        print(f"❌ Login failed: {mt5.last_error()}")
+        mt5.shutdown()
+        sys.exit()
+    
+    if not mt5.terminal_info().trade_allowed:
+        print("⚠️ AutoTrading is disabled!")
+        mt5.shutdown()
+        sys.exit()
+    
+    print("✅ MT5 ready.")
+
+# ==============================
+# ✅ Get latest DB signal
+# ==============================
+def get_latest_chart_signal():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT chart_signal FROM signal_history ORDER BY timestamp DESC LIMIT 1"
+        )
+        row = cursor.fetchone()
+        conn.close()
+        return row[0].strip().upper() if row else None
+    except Exception as e:
+        print(f"❌ DB read error: {e}")
+        return None
+
+# ==============================
+# ✅ Get tradeable symbol
+# ==============================
+def find_tradeable_gold_symbol():
+    symbols = mt5.symbols_get("*XAUUSD*")
+    for s in symbols:
+        info = mt5.symbol_info(s.name)
+        if info and not info.visible:
+            mt5.symbol_select(s.name, True)
+        if info and info.trade_mode == mt5.SYMBOL_TRADE_MODE_FULL:
+            return s.name
+    print("❌ No tradeable XAUUSD found.")
+    mt5.shutdown()
+    sys.exit()
+
+# ==============================
+# ✅ Open multiple trades
+# ==============================
+def open_multiple_trades(symbol, signal):
+    tick = mt5.symbol_info_tick(symbol)
+    if not tick:
+        print("❌ Cannot fetch tick data.")
+        return
+
+    direction = mt5.ORDER_TYPE_BUY if signal == "BUY" else mt5.ORDER_TYPE_SELL
+    price = tick.ask if signal == "BUY" else tick.bid
+
+    existing_orders = [o for o in mt5.orders_get() if o.magic == TRADE_MAGIC]
+
+    # Prevent duplicate signal trades
+    if any(o.comment == f"DB-Signal-{signal}" for o in existing_orders):
+        print(f"⚠️ Trades for {signal} already exist, skipping...")
+        return
+
+    print(f"🚀 Opening 5 trades for {signal} signal")
+    for i, tp_pips in enumerate(TP_PIPS):
+        tp_price = round(price + tp_pips if signal=="BUY" else price - tp_pips, 2)
+        request = {
+            "action": mt5.TRADE_ACTION_DEAL,
+            "symbol": symbol,
+            "volume": LOT_SIZE,
+            "type": direction,
+            "price": price,
+            "sl": 0.0,
+            "tp": tp_price,
+            "deviation": TRADE_DEVIATION,
+            "magic": TRADE_MAGIC,
+            "comment": f"DB-Signal-{signal}",
+            "type_time": mt5.ORDER_TIME_GTC,
+            "type_filling": mt5.ORDER_FILLING_IOC
+        }
+        result = mt5.order_send(request)
+        if result.retcode == mt5.TRADE_RETCODE_DONE:
+            print(f"✅ Trade {i+1} opened | TP={tp_price}")
+        else:
+            print(f"❌ Trade {i+1} failed | Retcode={result.retcode}")
+
+# ==============================
+# ✅ Close all trades of opposite signal
+# ==============================
+def close_opposite_trades(symbol, signal):
+    opposite = "SELL" if signal == "BUY" else "BUY"
+    positions = mt5.positions_get()
+    for pos in positions:
+        if pos.symbol == symbol and pos.comment == f"DB-Signal-{opposite}":
+            close_type = mt5.ORDER_TYPE_SELL if pos.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY
+            price = mt5.symbol_info_tick(symbol).bid if close_type==mt5.ORDER_TYPE_SELL else mt5.symbol_info_tick(symbol).ask
+            request = {
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": symbol,
+                "volume": pos.volume,
+                "type": close_type,
+                "price": price,
+                "deviation": TRADE_DEVIATION,
+                "magic": TRADE_MAGIC,
+                "comment": f"Close-Opposite-{opposite}",
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_IOC
+            }
+            mt5.order_send(request)
+            print(f"✅ Closed opposite {opposite} trade, ticket={pos.ticket}")
+
+# ==============================
+# ✅ Breakeven logic
+# ==============================
+def adjust_breakeven(symbol, signal):
+    positions = mt5.positions_get()
+    if not positions:
+        return
+
+    for pos in positions:
+        if pos.symbol != symbol or pos.comment != f"DB-Signal-{signal}":
+            continue
+
+        # For BUY: if TP 7 or 10 hit on other trades, move SL to breakeven
+        # For SELL: similar
+        entry_price = pos.price_open
+        direction = pos.type
+        current_price = mt5.symbol_info_tick(symbol).bid if direction==mt5.ORDER_TYPE_BUY else mt5.symbol_info_tick(symbol).ask
+
+        # Determine which trades are already partially hit
+        # For simplicity, check if current price passed TP7 or TP10
+        threshold_7 = entry_price + 7 if direction==mt5.ORDER_TYPE_BUY else entry_price - 7
+        threshold_10 = entry_price + 10 if direction==mt5.ORDER_TYPE_BUY else entry_price - 10
+
+        if (direction==mt5.ORDER_TYPE_BUY and current_price >= threshold_7) or (direction==mt5.ORDER_TYPE_SELL and current_price <= threshold_7):
+            # Move SL of higher TP trades (150,200,300) to breakeven
+            new_sl = entry_price + BREAKEVEN_BUFFER if direction==mt5.ORDER_TYPE_BUY else entry_price - BREAKEVEN_BUFFER
+            if (pos.sl == 0.0 or (direction==mt5.ORDER_TYPE_BUY and pos.sl < new_sl) or (direction==mt5.ORDER_TYPE_SELL and pos.sl > new_sl)):
+                modify_request = {
+                    "action": mt5.TRADE_ACTION_SLTP,
+                    "position": pos.ticket,
+                    "sl": new_sl,
+                    "tp": pos.tp
+                }
+                mt5.order_send(modify_request)
+                print(f"🔧 Moved SL to breakeven for trade {pos.ticket}")
+
+# ==============================
+# ✅ Main
+# ==============================
+# if __name__ == "__main__":
+#     initialize_mt5()
+#     symbol = find_tradeable_gold_symbol()
+#     latest_signal = get_latest_chart_signal()
+
+# if latest_signal:
+#     close_opposite_trades(symbol, latest_signal)
+#     open_multiple_trades(symbol, latest_signal)
+
+#     # Monitor trades for breakeven for 10 minutes
+#     print("⏱ Monitoring trades for breakeven for 10 minutes...")
+#     start_time = time.time()
+#     monitoring_duration = 9 * 60  # 9 minutes in seconds
+
+#     try:
+#         while time.time() - start_time < monitoring_duration:
+#             adjust_breakeven(symbol, latest_signal)
+#             time.sleep(10)  # check every 9 seconds
+#     except KeyboardInterrupt:
+#         print("🛑 Monitoring stopped by user.")
+
+#     print("⏱ Finished 10-minute breakeven monitoring.")
+
+#     mt5.shutdown()

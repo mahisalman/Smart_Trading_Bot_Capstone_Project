@@ -1,0 +1,149 @@
+"""
+extract_chart.py — TradingView Chart Data Extractor
+Reads a chart screenshot, extracts candles, indicators, and OCR text.
+"""
+
+import cv2
+import pytesseract
+import numpy as np
+from skimage.measure import label, regionprops
+import json
+import os
+import argparse
+from pathlib import Path
+
+# --- OCR configuration ---
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # change if needed
+
+def ocr_text(image, lang="eng+ben"):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    text = pytesseract.image_to_string(gray, lang=lang)
+    return text.strip()
+
+def detect_y_axis_labels(image):
+    h, w = image.shape[:2]
+    stripe_w = int(w * 0.15)
+    y_axis_crop = image[:, w - stripe_w:]
+    gray = cv2.cvtColor(y_axis_crop, cv2.COLOR_BGR2GRAY)
+    text = pytesseract.image_to_string(gray, lang="eng")
+    boxes = pytesseract.image_to_data(gray, lang="eng", output_type=pytesseract.Output.DICT)
+    labels = []
+    for i in range(len(boxes["text"])):
+        if boxes["text"][i].strip() != "":
+            (x, y, bw, bh) = (boxes["left"][i], boxes["top"][i], boxes["width"][i], boxes["height"][i])
+            labels.append({
+                "bbox": [x + w - stripe_w, y, x + w - stripe_w + bw, y + bh],
+                "text": boxes["text"][i]
+            })
+    return labels
+
+def detect_x_axis_labels(image):
+    h, w = image.shape[:2]
+    stripe_h = int(h * 0.15)
+    x_axis_crop = image[h - stripe_h:, :]
+    gray = cv2.cvtColor(x_axis_crop, cv2.COLOR_BGR2GRAY)
+    text = pytesseract.image_to_string(gray, lang="eng")
+    boxes = pytesseract.image_to_data(gray, lang="eng", output_type=pytesseract.Output.DICT)
+    labels = []
+    for i in range(len(boxes["text"])):
+        if boxes["text"][i].strip() != "":
+            (x, y, bw, bh) = (boxes["left"][i], boxes["top"][i], boxes["width"][i], boxes["height"][i])
+            labels.append({
+                "bbox": [x, y + h - stripe_h, x + bw, y + h - stripe_h + bh],
+                "text": boxes["text"][i]
+            })
+    return labels
+
+def detect_candles(image):
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    lower_green = np.array([40, 50, 40])
+    upper_green = np.array([100, 255, 255])
+    lower_red1 = np.array([0, 50, 40])
+    upper_red1 = np.array([10, 255, 255])
+    lower_red2 = np.array([160, 50, 40])
+    upper_red2 = np.array([179, 255, 255])
+
+    mask_green = cv2.inRange(hsv, lower_green, upper_green)
+    mask_red = cv2.inRange(hsv, lower_red1, upper_red1) | cv2.inRange(hsv, lower_red2, upper_red2)
+    masks = [("green", mask_green), ("red", mask_red)]
+
+    candles = []
+    debug = image.copy()
+    for color, mask in masks:
+        labeled = label(mask)
+        for region in regionprops(labeled):
+            if region.area < 20:
+                continue
+            minr, minc, maxr, maxc = region.bbox
+            candles.append({
+                "color": color,
+                "bbox": [minc, minr, maxc, maxr],
+                "area": region.area
+            })
+            cv2.rectangle(debug, (minc, minr), (maxc, maxr),
+                          (0, 255, 0) if color == "green" else (0, 0, 255), 1)
+    return candles, debug
+
+def detect_indicator_zones(image):
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    lower_zone = np.array([0, 30, 20])
+    upper_zone = np.array([20, 255, 255])
+    mask = cv2.inRange(hsv, lower_zone, upper_zone)
+    labeled = label(mask)
+    zones = []
+    debug = image.copy()
+    for region in regionprops(labeled):
+        if region.area < 1000:
+            continue
+        minr, minc, maxr, maxc = region.bbox
+        zones.append({
+            "bbox": [minc, minr, maxc, maxr],
+            "area": region.area
+        })
+        cv2.rectangle(debug, (minc, minr), (maxc, maxr), (255, 0, 0), 2)
+    return zones, debug
+
+def main(args):
+    image_path = Path(args.image)
+    out_dir = Path(args.out)
+    out_dir.mkdir(exist_ok=True, parents=True)
+
+    image = cv2.imread(str(image_path))
+    if image is None:
+        print(f"❌ Could not load image: {image_path}")
+        return
+
+    print(f"[INFO] Reading {image_path.name} ...")
+
+    ocr_result = ocr_text(image)
+    y_labels = detect_y_axis_labels(image)
+    x_labels = detect_x_axis_labels(image)
+    candles, candles_debug = detect_candles(image)
+    zones, zones_debug = detect_indicator_zones(image)
+
+    cv2.imwrite(str(out_dir / "candles_debug.png"), candles_debug)
+    cv2.imwrite(str(out_dir / "zones_debug.png"), zones_debug)
+    (out_dir / "ocr_full.txt").write_text(ocr_result, encoding="utf-8")
+
+    result = {
+        "image": str(image_path),
+        "size": {"width": image.shape[1], "height": image.shape[0]},
+        "ocr_text": ocr_result,
+        "y_axis_labels": y_labels,
+        "x_axis_labels": x_labels,
+        "candles": candles,
+        "indicator_zones": zones,
+    }
+
+    json_path = out_dir / "result.json"
+    json.dump(result, open(json_path, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+    print(f"[✅] Extraction complete! Output saved to {out_dir}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--image", required=True, help="Path to chart screenshot")
+    parser.add_argument("--out", default="chart_output", help="Output folder")
+    args = parser.parse_args()
+    main(args)

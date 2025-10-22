@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-10-22T10:15:21+06:00",
+  "sources_used": [
+    "yahoo_futures",
+    "tradingview_html",
+    "kitco_fallback"
+  ],
+  "price_samples": [
+    {
+      "source": "yahoo_futures",
+      "price": 4139.10009765625
+    },
+    {
+      "source": "tradingview_html",
+      "price": 1.0
+    },
+    {
+      "source": "kitco_fallback",
+      "price": 412.0
+    }
+  ],
+  "price_aggregate": {
+    "mean": 1517.36669921875,
+    "median": 412.0,
+    "sources": [
+      "yahoo_futures",
+      "tradingview_html",
+      "kitco_fallback"
+    ]
+  },
+  "technical_indicators": {
+    "sma_short": 4122.0150390625,
+    "sma_long": 4149.556015625,
+    "ema_20": 4119.517217955871,
+    "rsi_14": 50.47846889952153,
+    "atr_proxy": 14.928571428571429,
+    "momentum_5": 0.0005076378187696129,
+    "latest_price": 4139.10009765625
+  },
+  "news_headlines": [],
+  "news_sentiment": 0.0,
+  "prediction": {
+    "signal": "HOLD",
+    "confidence": 50,
+    "score": 0.0,
+    "reasons": []
+  },
+  "notes": []
+}

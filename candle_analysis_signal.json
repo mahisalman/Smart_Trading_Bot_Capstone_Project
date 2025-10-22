@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-10-15T15:12:53+06:00",
+  "symbol": "GC=F",
+  "timeframe_results": {
+    "M5": {
+      "patterns": [],
+      "signal": "HOLD",
+      "score": 0.0,
+      "explain": "score=0.0",
+      "last_close": 4227.0,
+      "last_open": 4225.7998046875
+    },
+    "M15": {
+      "patterns": [],
+      "signal": "HOLD",
+      "score": 0.0,
+      "explain": "score=0.0",
+      "last_close": 4227.0,
+      "last_open": 4225.7998046875
+    }
+  },
+  "final": {
+    "signal": "HOLD",
+    "confidence": 10,
+    "avg": 0.0,
+    "details": {
+      "M5": {
+        "pattern_signal": "HOLD",
+        "score": 0.0,
+        "contribution": 0.0,
+        "patterns": []
+      },
+      "M15": {
+        "pattern_signal": "HOLD",
+        "score": 0.0,
+        "contribution": 0.0,
+        "patterns": []
+      }
+    }
+  }
+}

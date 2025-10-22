@@ -1,0 +1,158 @@
+import requests
+import json
+from datetime import datetime
+
+# === CONFIG ===
+SYMBOL = "XAU/USD"
+INTERVAL = "4h"  # H4 timeframe
+OUTPUT_FILE = "poi_signal.json"
+
+# === API KEYS & MODEL ===
+TWELVE_API_KEY = "5a55f7fefadf48dc8d0a2d5685b553ba"
+GITHUB_API_KEY = "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"
+
+# === ENDPOINTS ===
+TWELVE_URL = (
+    f"https://api.twelvedata.com/time_series?"
+    f"symbol={SYMBOL}&interval={INTERVAL}&apikey={TWELVE_API_KEY}&outputsize=100"
+)
+GITHUB_ENDPOINT = "https://models.github.ai/inference/chat/completions"
+MODEL_NAME = "openai/gpt-4.1-mini"
+
+# === PROMPT ===
+POI_PROMPT = """
+You are a professional XAUUSD (Gold) trader specializing in Smart Money Concepts (SMC) and market structure.
+
+Your task: Detect the most recent Point of Interest (POI) zone from the given price chart data.
+
+### POI (Point of Interest) Detection Logic:
+
+1. When the market breaks a structure (creates a new high or new low), we identify the POI near that break.
+
+2. **If the structure breaks UP (Bullish Break of Structure):**
+   - Find the neckline candle (the candle that caused the break upward).
+   - On the right side of that neckline, locate the *lowest bullish candle*.
+   - To the left of that bullish candle, find the *first bearish candle* before it.
+   - That bearish candle is the POI (Point of Interest) for potential bullish continuation.
+
+3. **If the structure breaks DOWN (Bearish Break of Structure):**
+   - Find the neckline candle (the candle that caused the break downward).
+   - On the right side of that neckline, locate the *highest bearish candle*.
+   - To the left of that bearish candle, find the *first bullish candle* before it.
+   - That bullish candle is the POI (Point of Interest) for potential bearish continuation.
+
+4. Return output strictly in JSON format:
+{
+  "BOS_Type": "Bullish" or "Bearish",
+  "POI_Candle": {
+    "Open": <price>,
+    "High": <price>,
+    "Low": <price>,
+    "Close": <price>,
+    "Time": "<timestamp>"
+  },
+  "POI_Zone": {
+    "Start": <price>,
+    "End": <price>
+  },
+  "Confidence": "<High | Medium | Low>",
+  "Comment": "Short reasoning behind why this candle qualifies as POI"
+}
+"""
+
+
+# === FETCH DATA ===
+def fetch_xauusd_h4():
+    print("📡 Fetching XAUUSD H4 data...")
+    try:
+        response = requests.get(TWELVE_URL)
+        response.raise_for_status()
+        data = response.json()
+
+        if "values" not in data:
+            raise Exception(f"Unexpected API response: {data}")
+
+        candles = data["values"][::-1]  # reverse to oldest→latest
+        print(f"✅ Fetched {len(candles)} candles.")
+        return candles
+    except Exception as e:
+        print(f"❌ Error fetching data: {e}")
+        return []
+
+
+# === ANALYZE WITH GITHUB MODEL ===
+def analyze_poi_with_github_llm(candles):
+    print("🧠 Sending chart data to GitHub Model for POI analysis...")
+    try:
+        payload = {
+            "model": MODEL_NAME,
+            "messages": [
+                {"role": "system", "content": POI_PROMPT},
+                {
+                    "role": "user",
+                    "content": (
+                        f"Here is the recent {SYMBOL} {INTERVAL} OHLC data:\n\n"
+                        f"{json.dumps(candles[-50:], indent=2)}\n\n"
+                        "Find and return the POI as per the above rule."
+                    )
+                },
+            ],
+            "temperature": 0.3,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {GITHUB_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        response = requests.post(GITHUB_ENDPOINT, headers=headers, json=payload)
+        response.raise_for_status()
+
+        result = response.json()
+
+        # Extract text depending on response structure
+        if "choices" in result and len(result["choices"]) > 0:
+            output_text = result["choices"][0]["message"]["content"]
+        elif "output" in result:
+            output_text = result["output"]
+        else:
+            raise Exception(f"Unexpected response format: {result}")
+
+        print("✅ Received POI analysis from GitHub Model.")
+        return output_text
+    except Exception as e:
+        print(f"❌ Error analyzing POI: {e}")
+        return None
+
+
+# === SAVE TO JSON ===
+def save_to_json(output_text):
+    try:
+        start = output_text.find("{")
+        end = output_text.rfind("}") + 1
+        json_text = output_text[start:end]
+        data = json.loads(json_text)
+
+        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+        print(f"💾 POI analysis saved successfully → {OUTPUT_FILE}")
+    except Exception as e:
+        print(f"⚠️ Error saving JSON: {e}\nRaw Output:\n{output_text}")
+
+
+# === MAIN ===
+def main():
+    candles = fetch_xauusd_h4()
+    if not candles:
+        print("❌ No candle data available. Exiting.")
+        return
+
+    llm_output = analyze_poi_with_github_llm(candles)
+    if llm_output:
+        save_to_json(llm_output)
+    else:
+        print("❌ No output received from GitHub model.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,81 @@
+from chart_flow import run_chrome_shot, image_to_base64, find_latest_signal_llm, save_signal_to_json
+# from xauusd_candles_modes import run_candlestick_analysis
+from pipeline import (fetch_price_yahoo_futures,fetch_price_tradingview_snapshot,fetch_price_kitco,aggregate_price_samples,    fetch_reuters_gold_headlines,    simple_sentiment_from_headlines,    compute_indicators_from_df,    decide_signal,    run_pipeline)
+
+
+run_chrome_shot()
+IMG_PATH = "firefox_tab_capture.png"
+image64 = image_to_base64(IMG_PATH)
+if image64 is not None:
+    signal = find_latest_signal_llm(image64)
+    print(f"Chart_Signal: {signal}")
+    save_signal_to_json(signal)
+else:
+    print("Failed to convert image to Base64.")
+
+# run_candlestick_analysis()
+
+
+def main():
+    """
+    Example workflow demonstrating individual function usage
+    and running the full pipeline.
+    """
+    # print("\n=== XAUUSD Signal System ===\n")
+
+    # 1️⃣ Fetch price data
+    # print("Fetching price from Yahoo Futures...")
+    yahoo_data = fetch_price_yahoo_futures()
+    # print("Yahoo:", yahoo_data)
+
+    # print("Fetching price from TradingView snapshot...")
+    tv_data = fetch_price_tradingview_snapshot()
+    # print("TradingView:", tv_data)
+
+    # print("Fetching price from Kitco...")
+    kitco_data = fetch_price_kitco()
+    # print("Kitco:", kitco_data)
+
+    # 2️⃣ Aggregate prices
+    price_samples = [d for d in [yahoo_data, tv_data, kitco_data] if d]
+    if price_samples:
+        aggregated = aggregate_price_samples(price_samples)
+        print("\nAggregated Price:", aggregated)
+    else:
+        print("\nNo price samples available to aggregate.")
+
+    # 3️⃣ Fetch news headlines and sentiment
+    # print("\nFetching Reuters Gold headlines...")
+    headlines = fetch_reuters_gold_headlines(limit=6)
+    # print("Headlines:", headlines)
+
+    sentiment_score = simple_sentiment_from_headlines(headlines)
+    # print("News sentiment score:", sentiment_score)
+
+    # 4️⃣ Compute technical indicators (using Yahoo DF if available)
+    if yahoo_data and "df" in yahoo_data:
+        df_for_indicators = yahoo_data["df"]
+        indicators = compute_indicators_from_df(df_for_indicators)
+        print("\nTechnical indicators:", indicators)
+    else:
+        indicators = None
+        print("\nInsufficient price data for technical indicators.")
+
+    # 5️⃣ Decide signal
+    if indicators:
+        prediction = decide_signal(indicators, sentiment_score)
+        print("\nSignal decision:", prediction)
+    else:
+        prediction = {"signal": "HOLD", "confidence": 10, "reasons": ["insufficient data"]}
+        print("\nSignal decision:", prediction)
+
+    # 6️⃣ Run full pipeline (saves JSON + database)
+    # print("\nRunning full pipeline...")
+    pipeline_result = run_pipeline()
+    print("\nFull pipeline completed. JSON and DB updated.")
+
+    return pipeline_result
+
+
+if __name__ == "__main__":
+    main()
