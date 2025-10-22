@@ -213,7 +213,6 @@ ENV/
 *.pkl
 *.zip
 *.tar.gz
-*.mp4
 *.avi
 *.mov
 *.png
